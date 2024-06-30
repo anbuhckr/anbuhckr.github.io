@@ -34,12 +34,14 @@ async def cleanup(*args, **kwargs):
 
 @app.exception(NotFound)
 async def ignore_404s(request, exception):
-    return await response.json({'erorr': 'not found'})
+    error_msg['error']['message'] = 'page not found'
+    return response.json(error_msg)
 
 @app.post('/v1/chat/completions')
 async def chat(request):
-    if 'key' not in request.json or request.json.get('key') != api_key:
-        error_msg['message'] = 'api_key not valid'
+    key = request.headers.get('Authorization', '').split()
+    if len(key) != 2 or key[1] != api_key:
+        error_msg['error']['message'] = 'api_key not valid'
         return response.json(error_msg)
     res = await request.respond(content_type='text/plain')
     try:
@@ -52,10 +54,11 @@ async def chat(request):
         )
         for chunk in output:
             delta = chunk['choices'][0]['delta']
-            if 'content' in delta:
-                await res.send(delta['content'].encode())
+            if 'content' in delta or chunk['choices'][0]['finish_reason'] == 'stop':
+                m = f'data: {json.dumps(chunk)}'
+                await res.send(m.encode())
     except Exception as e:
-        error_msg['message'] = e
+        error_msg['error']['message'] = e
         await res.send(json.dumps(error_msg).encode())
     await res.eof()
 
