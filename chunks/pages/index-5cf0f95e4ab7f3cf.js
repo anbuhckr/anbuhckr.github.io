@@ -853,13 +853,13 @@
                     done: t
                   } = await i.read();
                   v = t;
-                  let cc = g.decode(e).split('\n\n');
+                  let cc = g.decode(e).split("\n\n");
                   for (const c of cc) {
                     if (c.length === 0) continue;
-                    let a = '';
+                    let a = "";
                     try {
                       let j = JSON.parse((c.slice(6)));
-                      a = j.choices[0]?.delta?.content || '';
+                      a = j.choices[0]?.delta?.content || "";
                       v = j.choices[0]?.finish_reason !== null;
                     } catch {}
                     if (w += a, b) {
