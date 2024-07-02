@@ -790,9 +790,10 @@
                 });
                 let a = JSON.stringify({
                     messages: r.messages,
-                    temperature: r.temperature,
                     model: "gpt-3.5-turbo-16k",
-                    stream: true
+                    prompt: h,
+                    stream: true,
+                    temperature: r.temperature,
                   }),
                   l = new AbortController,
                   s = await fetch(p, {
