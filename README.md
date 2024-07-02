@@ -10,7 +10,7 @@ A static web ui chat interface for everyone. base on chatbot-ui
 # python3 -m pip install sanic[ext]
 # python3 -m pip install llama-cpp-python
 
-import json
+import json, asyncio
 from llama_cpp import Llama
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -37,6 +37,13 @@ async def ignore_404s(request, exception):
     error_msg['error']['message'] = 'page not found'
     return response.json(error_msg)
 
+async def chunks(generator):
+    for i in generator:
+        delta = i['choices'][0]['delta']
+        if 'content' in delta or i['choices'][0]['finish_reason'] == 'stop':
+            yield f'data: {json.dumps(i)}'
+        await asyncio.sleep(.01)
+
 @app.post('/v1/chat/completions')
 async def chat(request):
     key = request.headers.get('Authorization', '').split()
@@ -52,11 +59,8 @@ async def chat(request):
             temperature=request.json.get('temperature'),
             stream=True,
         )
-        for chunk in output:
-            delta = chunk['choices'][0]['delta']
-            if 'content' in delta or chunk['choices'][0]['finish_reason'] == 'stop':
-                m = f'data: {json.dumps(chunk)}'
-                await res.send(m.encode())
+        async for chunk in chunks(output):
+            await res.send(chunk)
     except Exception as e:
         error_msg['error']['message'] = e
         await res.send(json.dumps(error_msg).encode())
